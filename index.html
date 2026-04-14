@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>문태고등학교 아이모두 계정 조회</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700&display=swap');
+        body { font-family: 'Pretendard', sans-serif; background-color: #f8fafc; }
+        .glass-card { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); }
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <div class="max-w-md w-full glass-card border border-gray-200 rounded-3xl shadow-2xl overflow-hidden">
+        <!-- Header -->
+        <div class="bg-blue-600 p-8 text-white text-center">
+            <h1 class="text-2xl font-bold mb-2">문태고등학교</h1>
+            <p class="text-blue-100 opacity-90 text-sm">2026학년도 아이모두 계정 조회 서비스</p>
+        </div>
+
+        <!-- Form Section -->
+        <div class="p-8 space-y-5">
+            <div class="grid grid-cols-3 gap-3">
+                <div class="space-y-1">
+                    <label class="text-xs font-semibold text-gray-500 ml-1">학년</label>
+                    <input type="number" id="grade" placeholder="1" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all text-center text-lg">
+                </div>
+                <div class="space-y-1">
+                    <label class="text-xs font-semibold text-gray-500 ml-1">반</label>
+                    <input type="number" id="class" placeholder="1" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all text-center text-lg">
+                </div>
+                <div class="space-y-1">
+                    <label class="text-xs font-semibold text-gray-500 ml-1">번호</label>
+                    <input type="number" id="number" placeholder="1" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all text-center text-lg">
+                </div>
+            </div>
+
+            <div class="space-y-1">
+                <label class="text-xs font-semibold text-gray-500 ml-1">이름</label>
+                <input type="text" id="name" placeholder="이름을 입력하세요" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all text-lg">
+            </div>
+
+            <button onclick="searchAccount()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-200 transition-all transform active:scale-95 flex items-center justify-center space-x-2">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <span>계정 정보 찾기</span>
+            </button>
+        </div>
+
+        <!-- Result Section (Hidden by default) -->
+        <div id="resultBox" class="hidden px-8 pb-8 animate-fade-in-up">
+            <hr class="mb-6 border-gray-100">
+            <div class="bg-blue-50 border border-blue-100 rounded-2xl p-6 space-y-4">
+                <div>
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-xs font-bold text-blue-600 uppercase tracking-wider">아이디</span>
+                        <button onclick="copyToClipboard()" class="text-[10px] bg-blue-200 text-blue-700 px-2 py-1 rounded hover:bg-blue-300 transition-colors">복사하기</button>
+                    </div>
+                    <div id="resId" class="text-lg font-bold text-gray-800 break-all select-all"></div>
+                </div>
+                <div>
+                    <span class="text-xs font-bold text-blue-600 uppercase tracking-wider">최초 비밀번호</span>
+                    <div id="resPw" class="text-lg font-bold text-gray-800 tracking-widest"></div>
+                </div>
+            </div>
+            <p class="text-center text-[10px] text-gray-400 mt-4 italic">* 로그인 후 반드시 비밀번호를 변경해 주세요.</p>
+        </div>
+
+        <!-- Message Box -->
+        <div id="messageBox" class="hidden px-8 pb-8 text-center text-red-500 font-medium text-sm"></div>
+    </div>
+
+    <!-- Data & Logic -->
+    <script>
+        // CSV 데이터 (업로드해주신 내용을 JSON으로 변환)
+        const rawData = `NO,소속명,학년,반,번호,이름,아이디,최초비번
+1,문태고등학교,1,1,1,강가람,gr.kang7@ai.jne.kr,@ansxo2026
+2,문태고등학교,1,1,2,강동아,da.kang4@ai.jne.kr,@ansxo2026
+3,문태고등학교,1,1,3,고두현,dh.ko35@ai.jne.kr,@ansxo2026
+4,문태고등학교,1,1,4,기승한,sh.ki6@ai.jne.kr,@ansxo2026
+5,문태고등학교,1,1,5,김민휘,mh.kim140@ai.jne.kr,@ansxo2026
+6,문태고등학교,1,1,6,김윤서,ys.kim391@ai.jne.kr,@ansxo2026
+7,문태고등학교,1,1,7,나현우,hu.na12@ai.jne.kr,@ansxo2026
+8,문태고등학교,1,1,8,박세훈,sh.park644@ai.jne.kr,@ansxo2026
+9,문태고등학교,1,1,9,박우주,uj.park41@ai.jne.kr,@ansxo2026
+10,문태고등학교,1,1,10,박재웅,ju.park213@ai.jne.kr,@ansxo2026
+11,문태고등학교,1,1,11,박주연,jy.park326@ai.jne.kr,@ansxo2026
+12,문태고등학교,1,1,12,박진성,js.park249@ai.jne.kr,@ansxo2026
+13,문태고등학교,1,1,13,박하민,hm.park63@ai.jne.kr,@ansxo2026
+14,문태고등학교,1,1,14,안은후,eh.an2@ai.jne.kr,@ansxo2026
+15,문태고등학교,1,1,15,양세빈,sb.yang22@ai.jne.kr,@ansxo2026
+16,문태고등학교,1,1,16,오지아,ja.oh11@ai.jne.kr,@ansxo2026
+17,문태고등학교,1,1,17,윤여정,yj.yoon44@ai.jne.kr,@ansxo2026
+18,문태고등학교,1,1,18,이도훈,dh.lee238@ai.jne.kr,@ansxo2026
+19,문태고등학교,1,1,19,이설아,sa.lee165@ai.jne.kr,@ansxo2026
+20,문태고등학교,1,1,20,이율이,yi.lee7@ai.jne.kr,@ansxo2026
+21,문태고등학교,1,1,21,임은서,es.lim17@ai.jne.kr,@ansxo2026
+22,문태고등학교,1,1,22,장희정,hj.jang60@ai.jne.kr,@ansxo2026
+23,문태고등학교,1,1,23,정예찬,yc.jung53@ai.jne.kr,@ansxo2026
+24,문태고등학교,1,1,24,조준승,js.cho19@ai.jne.kr,@ansxo2026
+25,문태고등학교,1,1,25,최예원,yw.choi21@ai.jne.kr,@ansxo2026
+26,문태고등학교,1,1,26,최준오,jo.choi8@ai.jne.kr,@ansxo2026
+27,문태고등학교,1,2,1,고예현,yh.ko30@ai.jne.kr,@ansxo2026
+28,문태고등학교,1,2,2,김나영,ny.kim176@ai.jne.kr,@ansxo2026
+29,문태고등학교,1,2,3,김도영,dy.kim528@ai.jne.kr,@ansxo2026
+30,문태고등학교,1,2,4,김동하,dh.kim692@ai.jne.kr,@ansxo2026
+31,문태고등학교,1,2,5,김리원,rw.kim45@ai.jne.kr,@ansxo2026
+32,문태고등학교,1,2,6,김민섭,ms.kim471@ai.jne.kr,@ansxo2026
+33,문태고등학교,1,2,7,김승준,sj.kim433@ai.jne.kr,@ansxo2026
+34,문태고등학교,1,2,8,김시연,sy.kim920@ai.jne.kr,@ansxo2026
+35,문태고등학교,1,2,9,김윤아,ya.kim98@ai.jne.kr,@ansxo2026
+36,문태고등학교,1,2,10,김윤현,yh.kim193@ai.jne.kr,@ansxo2026
+37,문태고등학교,1,2,11,김은휘,eh.kim71@ai.jne.kr,@ansxo2026
+38,문태고등학교,1,2,12,김지성,js.kim315@ai.jne.kr,@ansxo2026
+39,문태고등학교,1,2,13,김하윤,hy.kim386@ai.jne.kr,@ansxo2026
+40,문태고등학교,1,2,14,박나연,ny.park26@ai.jne.kr,@ansxo2026
+41,문태고등학교,1,2,15,박도윤,dy.park73@ai.jne.kr,@ansxo2026
+42,문태고등학교,1,2,16,박소연,sy.park640@ai.jne.kr,@ansxo2026
+43,문태고등학교,1,2,17,박소희,sh.park645@ai.jne.kr,@ansxo2026
+44,문태고등학교,1,2,18,박준형,jh.park685@ai.jne.kr,@ansxo2026
+45,문태고등학교,1,2,19,배시우,su.bae21@ai.jne.kr,@ansxo2026
+46,문태고등학교,1,2,20,이가윤,gy.lee91@ai.jne.kr,@ansxo2026
+47,문태고등학교,1,2,21,이지원,jw.lee180@ai.jne.kr,@ansxo2026
+48,문태고등학교,1,2,22,이지윤,jy.lee291@ai.jne.kr,@ansxo2026
+49,문태고등학교,1,2,23,임재민,jm.lim25@ai.jne.kr,@ansxo2026
+50,문태고등학교,1,2,24,장수화,sh.jang107@ai.jne.kr,@ansxo2026
+51,문태고등학교,1,2,25,정지유,jy.jung125@ai.jne.kr,@ansxo2026
+52,문태고등학교,1,2,27,박소현,sh.park646@ai.jne.kr,@ansxo2026
+53,문태고등학교,1,3,1,김도영,dy.kim529@ai.jne.kr,@ansxo2026
+54,문태고등학교,1,3,2,김예린,yr.kim170@ai.jne.kr,@ansxo2026
+55,문태고등학교,1,3,3,김윤서,ys.kim392@ai.jne.kr,@ansxo2026
+56,문태고등학교,1,3,4,김현승,hs.kim315@ai.jne.kr,@ansxo2026
+57,문태고등학교,1,3,5,김효영,hy.kim387@ai.jne.kr,@ansxo2026
+58,문태고등학교,1,3,6,박지윤,jy.park327@ai.jne.kr,@ansxo2026
+59,문태고등학교,1,3,7,박하영,hy.park174@ai.jne.kr,@ansxo2026
+60,문태고등학교,1,3,8,박현,h.park17@ai.jne.kr,@ansxo2026
+61,문태고등학교,1,3,9,배수정,sj.bae41@ai.jne.kr,@ansxo2026
+62,문태고등학교,1,3,10,서지우,ju.seo64@ai.jne.kr,@ansxo2026
+63,문태고등학교,1,3,11,손도윤,dy.son9@ai.jne.kr,@ansxo2026
+64,문태고등학교,1,3,12,송은채,ec.song11@ai.jne.kr,@ansxo2026
+65,문태고등학교,1,3,13,양하율,hy.yang31@ai.jne.kr,@ansxo2026
+66,문태고등학교,1,3,14,이기범,gb.lee21@ai.jne.kr,@ansxo2026
+67,문태고등학교,1,3,15,이원경,wg.lee8@ai.jne.kr,@ansxo2026
+68,문태고등학교,1,3,16,임규리,gr.lim5@ai.jne.kr,@ansxo2026
+69,문태고등학교,1,3,17,임다현,dh.lim31@ai.jne.kr,@ansxo2026
+70,문태고등학교,1,3,18,정경윤,gy.jung32@ai.jne.kr,@ansxo2026
+71,문태고등학교,1,3,19,정다민,dm.jung9@ai.jne.kr,@ansxo2026
+72,문태고등학교,1,3,20,정민경,mg.jung63@ai.jne.kr,@ansxo2026
+73,문태고등학교,1,3,21,정소원,sw.jung55@ai.jne.kr,@ansxo2026
+74,문태고등학교,1,3,22,조현성,hs.cho67@ai.jne.kr,@ansxo2026
+75,문태고등학교,1,3,23,최윤진,yj.choi172@ai.jne.kr,@ansxo2026
+76,문태고등학교,1,3,24,한주형,jh.han72@ai.jne.kr,@ansxo2026
+77,문태고등학교,1,3,25,황선일,si.hwang11@ai.jne.kr,@ansxo2026
+78,문태고등학교,1,4,1,강우영,uy.kang4@ai.jne.kr,@ansxo2026
+79,문태고등학교,1,4,2,고경훈,gh.ko15@ai.jne.kr,@ansxo2026
+80,문태고등학교,1,4,3,곽류은,re.kwak3@ai.jne.kr,@ansxo2026
+81,문태고등학교,1,4,4,김세윤,sy.kim921@ai.jne.kr,@ansxo2026
+82,문태고등학교,1,4,5,김시후,sh.kim990@ai.jne.kr,@ansxo2026
+83,문태고등학교,1,4,6,김아현,ah.kim31@ai.jne.kr,@ansxo2026
+84,문태고등학교,1,4,7,김영은,ye.kim119@ai.jne.kr,@ansxo2026
+85,문태고등학교,1,4,8,김주환,jh.kim1057@ai.jne.kr,@ansxo2026
+86,문태고등학교,1,4,9,김호진,hj.kim420@ai.jne.kr,@ansxo2026
+87,문태고등학교,1,4,10,박민석,ms.park92@ai.jne.kr,@ansxo2026
+88,문태고등학교,1,4,11,박주리,jr.park4@ai.jne.kr,@ansxo2026
+89,문태고등학교,1,4,12,서영주,yj.seo108@ai.jne.kr,@ansxo2026
+90,문태고등학교,1,4,13,안창욱,cu.an2@ai.jne.kr,@ansxo2026
+91,문태고등학교,1,4,14,유상명,sm.yoo26@ai.jne.kr,@ansxo2026
+92,문태고등학교,1,4,15,유선호,sh.yoo73@ai.jne.kr,@ansxo2026
+93,문태고등학교,1,4,16,윤예나,yn.yoon6@ai.jne.kr,@ansxo2026
+94,문태고등학교,1,4,17,윤은별,eb.yoon2@ai.jne.kr,@ansxo2026
+95,문태고등학교,1,4,18,이승아,sa.lee166@ai.jne.kr,@ansxo2026
+96,문태고등학교,1,4,19,이아인,ai.lee18@ai.jne.kr,@ansxo2026
+97,문태고등학교,1,4,20,이정빈,jb.lee32@ai.jne.kr,@ansxo2026
+98,문태고등학교,1,4,21,이지영,jy.lee292@ai.jne.kr,@ansxo2026
+99,문태고등학교,1,4,22,이호준,hj.lee286@ai.jne.kr,@ansxo2026
+100,문태고등학교,1,4,23,장우성,us.jang9@ai.jne.kr,@ansxo2026
+101,문태고등학교,1,4,24,장준호,jh.jang116@ai.jne.kr,@ansxo2026
+102,문태고등학교,1,4,25,최예주,yj.choi173@ai.jne.kr,@ansxo2026
+103,문태고등학교,1,4,26,허라운,ru.heo2@ai.jne.kr,@ansxo2026
+104,문태고등학교,1,5,1,고다현,dh.ko36@ai.jne.kr,@ansxo2026
+105,문태고등학교,1,5,2,고영승,ys.ko17@ai.jne.kr,@ansxo2026
+106,문태고등학교,1,5,3,곽의영,uy.kwak2@ai.jne.kr,@ansxo2026
+107,문태고등학교,1,5,4,권지호,jh.kwon32@ai.jne.kr,@ansxo2026
+108,문태고등학교,1,5,5,김정환,jh.kim1058@ai.jne.kr,@ansxo2026
+109,문태고등학교,1,5,6,김주아,ja.kim252@ai.jne.kr,@ansxo2026
+110,문태고등학교,1,5,7,김지우,ju.kim314@ai.jne.kr,@ansxo2026
+111,문태고등학교,1,5,8,김진형,jh.kim1059@ai.jne.kr,@ansxo2026
+112,문태고등학교,1,5,9,박민서,ms.park93@ai.jne.kr,@ansxo2026
+113,문태고등학교,1,5,10,박정민,jm.park99@ai.jne.kr,@ansxo2026
+114,문태고등학교,1,5,11,박혜령,hr.park121@ai.jne.kr,@ansxo2026
+115,문태고등학교,1,5,12,백유성,ys.baek8@ai.jne.kr,@ansxo2026
+116,문태고등학교,1,5,13,백은결,eg.baek2@ai.jne.kr,@ansxo2026
+117,문태고등학교,1,5,14,서예림,yr.seo35@ai.jne.kr,@ansxo2026
+118,문태고등학교,1,5,15,양은지,ej.yang16@ai.jne.kr,@ansxo2026
+119,문태고등학교,1,5,16,오민준,mj.oh20@ai.jne.kr,@ansxo2026
+120,문태고등학교,1,5,17,오유경,yg.oh11@ai.jne.kr,@ansxo2026
+121,문태고등학교,1,5,18,유정연,jy.yoo26@ai.jne.kr,@ansxo2026
+122,문태고등학교,1,5,19,윤예린,yr.yoon15@ai.jne.kr,@ansxo2026
+123,문태고등학교,1,5,20,윤후,h.yoon9@ai.jne.kr,@ansxo2026
+124,문태고등학교,1,5,21,이지운,ju.lee221@ai.jne.kr,@ansxo2026
+125,문태고등학교,1,5,22,전윤서,ys.jeon19@ai.jne.kr,@ansxo2026
+126,문태고등학교,1,5,23,조효빈,hb.cho33@ai.jne.kr,@ansxo2026
+127,문태고등학교,1,5,24,진윤호,yh.jin14@ai.jne.kr,@ansxo2026
+128,문태고등학교,1,5,25,채승연,sy.chae15@ai.jne.kr,@ansxo2026
+129,문태고등학교,1,5,26,하선우,su.ha11@ai.jne.kr,@ansxo2026
+130,문태고등학교,1,6,1,강시온,so.kang4@ai.jne.kr,@ansxo2026
+131,문태고등학교,1,6,2,곽축복,cb.kwak2@ai.jne.kr,@ansxo2026
+132,문태고등학교,1,6,3,김건우,gu.kim146@ai.jne.kr,@ansxo2026
+133,문태고등학교,1,6,4,김소연,sy.kim922@ai.jne.kr,@ansxo2026
+134,문태고등학교,1,6,5,김지우,ju.kim315@ai.jne.kr,@ansxo2026
+135,문태고등학교,1,6,6,남광명,gm.nam5@ai.jne.kr,@ansxo2026
+136,문태고등학교,1,6,7,박경미,gm.park40@ai.jne.kr,@ansxo2026
+137,문태고등학교,1,6,8,박민서,ms.park94@ai.jne.kr,@ansxo2026
+138,문태고등학교,1,6,9,변제현,jh.byun10@ai.jne.kr,@ansxo2026
+139,문태고등학교,1,6,10,서다인,di.seo6@ai.jne.kr,@ansxo2026
+140,문태고등학교,1,6,11,안여원,yw.an7@ai.jne.kr,@ansxo2026
+141,문태고등학교,1,6,12,이세령,sr.lee87@ai.jne.kr,@ansxo2026
+142,문태고등학교,1,6,13,이은서,es.lee104@ai.jne.kr,@ansxo2026
+143,문태고등학교,1,6,14,이준서,js.lee189@ai.jne.kr,@ansxo2026
+144,문태고등학교,1,6,15,임초희,ch.lim30@ai.jne.kr,@ansxo2026
+145,문태고등학교,1,6,16,장서원,sw.jang30@ai.jne.kr,@ansxo2026
+146,문태고등학교,1,6,17,장정원,jw.jang48@ai.jne.kr,@ansxo2026
+147,문태고등학교,1,6,18,장지환,jh.jang117@ai.jne.kr,@ansxo2026
+148,문태고등학교,1,6,19,전태성,ts.jeon7@ai.jne.kr,@ansxo2026
+149,문태고등학교,1,6,20,전하율,hy.jeon40@ai.jne.kr,@ansxo2026
+150,문태고등학교,1,6,21,정다정,dj.jung19@ai.jne.kr,@ansxo2026
+151,문태고등학교,1,6,22,정대석,ds.jung25@ai.jne.kr,@ansxo2026
+152,문태고등학교,1,6,23,정채은,ce.jung14@ai.jne.kr,@ansxo2026
+153,문태고등학교,1,6,24,최유창,yc.choi13@ai.jne.kr,@ansxo2026
+154,문태고등학교,1,6,25,한도윤,dy.han26@ai.jne.kr,@ansxo2026
+155,문태고등학교,1,6,26,홍은호,eh.hong5@ai.jne.kr,@ansxo2026
+156,문태고등학교,1,7,1,강하은,he.kang22@ai.jne.kr,@ansxo2026
+157,문태고등학교,1,7,2,기정한,jh.ki4@ai.jne.kr,@ansxo2026
+158,문태고등학교,1,7,3,김은우,eu.kim54@ai.jne.kr,@ansxo2026
+159,문태고등학교,1,7,4,김지우,ju.kim316@ai.jne.kr,@ansxo2026
+160,문태고등학교,1,7,5,김하율,hy.kim388@ai.jne.kr,@ansxo2026
+161,문태고등학교,1,7,6,김현서,hs.kim316@ai.jne.kr,@ansxo2026
+162,문태고등학교,1,7,7,김현학,hh.kim72@ai.jne.kr,@ansxo2026
+163,문태고등학교,1,7,8,나시은,se.na5@ai.jne.kr,@ansxo2026
+164,문태고등학교,1,7,9,남광민,gm.nam6@ai.jne.kr,@ansxo2026
+165,문태고등학교,1,7,10,노건형,gh.noh13@ai.jne.kr,@ansxo2026
+166,문태고등학교,1,7,11,박예랑,yr.park39@ai.jne.kr,@ansxo2026
+167,문태고등학교,1,7,12,박원준,wj.park9@ai.jne.kr,@ansxo2026
+168,문태고등학교,1,7,13,박윤아,ya.park22@ai.jne.kr,@ansxo2026
+169,문태고등학교,1,7,14,박지수,js.park250@ai.jne.kr,@ansxo2026
+170,문태고등학교,1,7,15,박한나,hn.park26@ai.jne.kr,@ansxo2026
+171,문태고등학교,1,7,16,서유솔,ys.seo48@ai.jne.kr,@ansxo2026
+172,문태고등학교,1,7,17,안소현,sh.an57@ai.jne.kr,@ansxo2026
+173,문태고등학교,1,7,18,이서준,sj.lee308@ai.jne.kr,@ansxo2026
+174,문태고등학교,1,7,19,이서현,sh.lee609@ai.jne.kr,@ansxo2026
+175,문태고등학교,1,7,20,이예빈,yb.lee46@ai.jne.kr,@ansxo2026
+176,문태고등학교,1,7,21,이인서,is.lee22@ai.jne.kr,@ansxo2026
+177,문태고등학교,1,7,22,이조엘,je.lee63@ai.jne.kr,@ansxo2026
+178,문태고등학교,1,7,23,임소민,sm.lim30@ai.jne.kr,@ansxo2026
+179,문태고등학교,1,7,24,조원빈,wb.cho6@ai.jne.kr,@ansxo2026
+180,문태고등학교,1,7,25,최태민,tm.choi5@ai.jne.kr,@ansxo2026
+181,문태고등학교,1,7,26,홍준성,js.hong23@ai.jne.kr,@ansxo2026
+182,문태고등학교,1,8,1,문태학생,hs.moon7@ai.jne.kr,@ansxo2026
+183,문태고등학교,2,1,1,강우진,uj.kang13@ai.jne.kr,@ansxo2026
+184,문태고등학교,2,1,2,강우혁,uh.kang4@ai.jne.kr,@ansxo2026
+185,문태고등학교,2,1,3,김가은,ge.kim168@ai.jne.kr,@ansxo2026
+186,문태고등학교,2,1,4,김경훈,gh.kim283@ai.jne.kr,@ansxo2026
+187,문태고등학교,2,1,5,김규민,gm.kim161@ai.jne.kr,@ansxo2026
+188,문태고등학교,2,1,6,김민준,mj.kim598@ai.jne.kr,@ansxo2026
+189,문태고등학교,2,1,7,김소현,sh.kim1000@ai.jne.kr,@ansxo2026
+190,문태고등학교,2,1,8,김아리,ar.kim90@ai.jne.kr,@ansxo2026
+191,문태고등학교,2,1,9,김재영,jy.kim520@ai.jne.kr,@ansxo2026
+192,문태고등학교,2,1,10,김주영,jy.kim521@ai.jne.kr,@ansxo2026
+193,문태고등학교,2,1,11,김준영,jy.kim522@ai.jne.kr,@ansxo2026
+194,문태고등학교,2,1,12,문태영,ty.moon3@ai.jne.kr,@ansxo2026
+195,문태고등학교,2,1,13,박가람,gr.park57@ai.jne.kr,@ansxo2026
+196,문태고등학교,2,1,14,박경민,gm.park41@ai.jne.kr,@ansxo2026
+197,문태고등학교,2,1,15,박인서,is.park30@ai.jne.kr,@ansxo2026
+198,문태고등학교,2,1,16,박하선,hs.park127@ai.jne.kr,@ansxo2026
+199,문태고등학교,2,1,17,성소현,sh.sung11@ai.jne.kr,@ansxo2026
+200,문태고등학교,2,1,18,이시은,se.lee97@ai.jne.kr,@ansxo2026
+201,문태고등학교,2,1,20,정은희,eh.jung30@ai.jne.kr,@ansxo2026
+202,문태고등학교,2,1,21,정채린,cr.jung12@ai.jne.kr,@ansxo2026
+203,문태고등학교,2,1,22,진서현,sh.jin48@ai.jne.kr,@ansxo2026
+204,문태고등학교,2,1,23,최윤서,ys.choi134@ai.jne.kr,@ansxo2026
+205,문태고등학교,2,2,1,강선율,sy.kang112@ai.jne.kr,@ansxo2026
+206,문태고등학교,2,2,2,강재성,js.kang50@ai.jne.kr,@ansxo2026
+207,문태고등학교,2,2,3,강하민,hm.kang11@ai.jne.kr,@ansxo2026
+208,문태고등학교,2,2,4,고서준,sj.ko13@ai.jne.kr,@ansxo2026
+209,문태고등학교,2,2,5,김경준,gj.kim39@ai.jne.kr,@ansxo2026
+210,문태고등학교,2,2,6,김민지,mj.kim599@ai.jne.kr,@ansxo2026
+211,문태고등학교,2,2,7,김민찬,mc.kim117@ai.jne.kr,@ansxo2026
+212,문태고등학교,2,2,8,김수,s.kim51@ai.jne.kr,@ansxo2026
+213,문태고등학교,2,2,9,김의빈,ub.kim41@ai.jne.kr,@ansxo2026
+214,문태고등학교,2,2,10,김준성,js.kim319@ai.jne.kr,@ansxo2026
+215,문태고등학교,2,2,11,김지상,js.kim320@ai.jne.kr,@ansxo2026
+216,문태고등학교,2,2,12,나호성,hs.na15@ai.jne.kr,@ansxo2026
+217,문태고등학교,2,2,13,박예닮,yd.park9@ai.jne.kr,@ansxo2026
+218,문태고등학교,2,2,14,박준영,jy.park335@ai.jne.kr,@ansxo2026
+219,문태고등학교,2,2,15,백화윤,hy.baek12@ai.jne.kr,@ansxo2026
+220,문태고등학교,2,2,16,서가연,gy.seo23@ai.jne.kr,@ansxo2026
+221,문태고등학교,2,2,17,양다경,dg.yang8@ai.jne.kr,@ansxo2026
+222,문태고등학교,2,2,18,유행복,hb.yoo7@ai.jne.kr,@ansxo2026
+223,문태고등학교,2,2,19,이겸,g.lee35@ai.jne.kr,@ansxo2026
+224,문태고등학교,2,2,20,이제호,jh.lee659@ai.jne.kr,@ansxo2026
+225,문태고등학교,2,2,21,장지명,jm.jang7@ai.jne.kr,@ansxo2026
+226,문태고등학교,2,2,22,조우린,ur.cho9@ai.jne.kr,@ansxo2026
+227,문태고등학교,2,2,23,주승민,sm.joo11@ai.jne.kr,@ansxo2026
+228,문태고등학교,2,3,1,강수빈,sb.kang15@ai.jne.kr,@ansxo2026
+229,문태고등학교,2,3,2,고민준,mj.ko20@ai.jne.kr,@ansxo2026
+230,문태고등학교,2,3,3,권민준,mj.kwon20@ai.jne.kr,@ansxo2026
+231,문태고등학교,2,3,4,김다은,de.kim156@ai.jne.kr,@ansxo2026
+232,문태고등학교,2,3,5,김동건,dg.kim144@ai.jne.kr,@ansxo2026
+233,문태고등학교,2,3,6,김성욱,su.kim322@ai.jne.kr,@ansxo2026
+234,문태고등학교,2,3,7,김수아,sa.kim282@ai.jne.kr,@ansxo2026
+235,문태고등학교,2,3,8,김승현,sh.kim1001@ai.jne.kr,@ansxo2026
+236,문태고등학교,2,3,9,모제빈,jb.mo2@ai.jne.kr,@ansxo2026
+237,문태고등학교,2,3,10,박에스,es.park69@ai.jne.kr,@ansxo2026
+238,문태고등학교,2,3,11,박지유,jy.park336@ai.jne.kr,@ansxo2026
+239,문태고등학교,2,3,12,박해랑,hr.park124@ai.jne.kr,@ansxo2026
+240,문태고등학교,2,3,13,백선영,sy.baek47@ai.jne.kr,@ansxo2026
+241,문태고등학교,2,3,14,백한결,hg.baek4@ai.jne.kr,@ansxo2026
+242,문태고등학교,2,3,15,서가현,gh.seo21@ai.jne.kr,@ansxo2026
+243,문태고등학교,2,3,16,오혜민,hm.oh7@ai.jne.kr,@ansxo2026
+244,문태고등학교,2,3,17,이지수,js.lee190@ai.jne.kr,@ansxo2026
+245,문태고등학교,2,3,18,장태근,tg.jang2@ai.jne.kr,@ansxo2026
+246,문태고등학교,2,3,19,전대한,dh.jeon12@ai.jne.kr,@ansxo2026
+247,문태고등학교,2,3,20,정지우,ju.jung103@ai.jne.kr,@ansxo2026
+248,문태고등학교,2,3,21,조수하,sh.cho121@ai.jne.kr,@ansxo2026
+249,문태고등학교,2,3,22,차민혁,mh.cha6@ai.jne.kr,@ansxo2026
+250,문태고등학교,2,3,23,홍지호,jh.hong43@ai.jne.kr,@ansxo2026
+251,문태고등학교,2,4,1,김경욱,gu.kim151@ai.jne.kr,@ansxo2026
+252,문태고등학교,2,4,2,김명진,mj.kim600@ai.jne.kr,@ansxo2026
+253,문태고등학교,2,4,3,김민서,ms.kim483@ai.jne.kr,@ansxo2026
+254,문태고등학교,2,4,4,김사랑,sr.kim160@ai.jne.kr,@ansxo2026
+255,문태고등학교,2,4,5,김수호,sh.kim1002@ai.jne.kr,@ansxo2026
+256,문태고등학교,2,4,6,김아린,ar.kim91@ai.jne.kr,@ansxo2026
+257,문태고등학교,2,4,7,김재연,jy.kim523@ai.jne.kr,@ansxo2026
+258,문태고등학교,2,4,8,김지웅,ju.kim327@ai.jne.kr,@ansxo2026
+259,문태고등학교,2,4,9,김진규,jg.kim37@ai.jne.kr,@ansxo2026
+260,문태고등학교,2,4,10,김진아,ja.kim256@ai.jne.kr,@ansxo2026
+261,문태고등학교,2,4,11,김채윤,cy.kim119@ai.jne.kr,@ansxo2026
+262,문태고등학교,2,4,12,김형우,hu.kim125@ai.jne.kr,@ansxo2026
+263,문태고등학교,2,4,13,박보윤,by.park11@ai.jne.kr,@ansxo2026
+264,문태고등학교,2,4,14,박수인,si.park76@ai.jne.kr,@ansxo2026
+265,문태고등학교,2,4,15,유지원,jw.yoo18@ai.jne.kr,@ansxo2026
+266,문태고등학교,2,4,16,이서준,sj.lee311@ai.jne.kr,@ansxo2026
+267,문태고등학교,2,4,17,이승문,sm.lee176@ai.jne.kr,@ansxo2026
+268,문태고등학교,2,4,19,이채민,cm.lee31@ai.jne.kr,@ansxo2026
+269,문태고등학교,2,4,20,정나린,nr.jung7@ai.jne.kr,@ansxo2026
+270,문태고등학교,2,4,21,최시은,se.choi34@ai.jne.kr,@ansxo2026
+271,문태고등학교,2,4,22,함재균,jg.ham2@ai.jne.kr,@ansxo2026
+272,문태고등학교,2,4,23,허서준,sj.heo24@ai.jne.kr,@ansxo2026
+273,문태고등학교,2,4,24,정민우,mu.jung10@ai.jne.kr,@ansxo2026
+274,문태고등학교,2,5,1,강은율,ey.kang8@ai.jne.kr,@ansxo2026
+275,문태고등학교,2,5,2,김다미,dm.kim33@ai.jne.kr,@ansxo2026
+276,문태고등학교,2,5,3,김민서,ms.kim484@ai.jne.kr,@ansxo2026
+277,문태고등학교,2,5,4,김율,y.kim50@ai.jne.kr,@ansxo2026
+278,문태고등학교,2,5,5,김태민,tm.kim46@ai.jne.kr,@ansxo2026
+279,문태고등학교,2,5,6,노내희,nh.noh2@ai.jne.kr,@ansxo2026
+280,문태고등학교,2,5,7,명경원,gw.myung2@ai.jne.kr,@ansxo2026
+281,문태고등학교,2,5,8,박성우,su.park223@ai.jne.kr,@ansxo2026
+282,문태고등학교,2,5,9,배정찬,jc.bae3@ai.jne.kr,@ansxo2026
+283,문태고등학교,2,5,10,손지민,jm.son12@ai.jne.kr,@ansxo2026
+284,문태고등학교,2,5,11,신예찬,yc.shin19@ai.jne.kr,@ansxo2026
+285,문태고등학교,2,5,12,심민서,ms.shim5@ai.jne.kr,@ansxo2026
+286,문태고등학교,2,5,13,양지웅,ju.yang37@ai.jne.kr,@ansxo2026
+287,문태고등학교,2,5,14,이세빈,sb.lee108@ai.jne.kr,@ansxo2026
+288,문태고등학교,2,5,15,이수혁,sh.lee614@ai.jne.kr,@ansxo2026
+289,문태고등학교,2,5,16,이아영,ay.lee29@ai.jne.kr,@ansxo2026
+290,문태고등학교,2,5,17,이지영,jy.lee294@ai.jne.kr,@ansxo2026
+291,문태고등학교,2,5,18,이현호,hh.lee44@ai.jne.kr,@ansxo2026
+292,문태고등학교,2,5,19,정승원,sw.jung57@ai.jne.kr,@ansxo2026
+293,문태고등학교,2,5,20,최사무,sm.choi56@ai.jne.kr,@ansxo2026
+294,문태고등학교,2,5,21,최설,s.choi13@ai.jne.kr,@ansxo2026
+295,문태고등학교,2,5,22,한상민,sm.han22@ai.jne.kr,@ansxo2026
+296,문태고등학교,2,5,23,허태준,tj.heo2@ai.jne.kr,@ansxo2026
+297,문태고등학교,2,6,1,김강윤,gy.kim190@ai.jne.kr,@ansxo2026
+298,문태고등학교,2,6,2,김건우,gu.kim152@ai.jne.kr,@ansxo2026
+299,문태고등학교,2,6,3,김슬하,sh.kim1003@ai.jne.kr,@ansxo2026
+300,문태고등학교,2,6,4,김영서,ys.kim399@ai.jne.kr,@ansxo2026
+301,문태고등학교,2,6,5,김하늘,hn.kim91@ai.jne.kr,@ansxo2026
+302,문태고등학교,2,6,6,박도현,dh.park85@ai.jne.kr,@ansxo2026
+303,문태고등학교,2,6,7,박은서,es.park70@ai.jne.kr,@ansxo2026
+304,문태고등학교,2,6,8,박준성,js.park253@ai.jne.kr,@ansxo2026
+305,문태고등학교,2,6,9,박한별,hb.park72@ai.jne.kr,@ansxo2026
+306,문태고등학교,2,6,11,유지우,ju.yoo13@ai.jne.kr,@ansxo2026
+307,문태고등학교,2,6,12,이정우,ju.lee224@ai.jne.kr,@ansxo2026
+308,문태고등학교,2,6,13,이지홍,jh.lee660@ai.jne.kr,@ansxo2026
+309,문태고등학교,2,6,14,이찬민,cm.lee32@ai.jne.kr,@ansxo2026
+310,문태고등학교,2,6,15,이현준,hj.lee295@ai.jne.kr,@ansxo2026
+311,문태고등학교,2,6,16,정승연,sy.jung255@ai.jne.kr,@ansxo2026
+312,문태고등학교,2,6,17,정원아,wa.jung1@ai.jne.kr,@ansxo2026
+313,문태고등학교,2,6,18,정주원,jw.jung87@ai.jne.kr,@ansxo2026
+314,문태고등학교,2,6,19,정하윤,hy.jung175@ai.jne.kr,@ansxo2026
+315,문태고등학교,2,6,20,주동한,dh.joo6@ai.jne.kr,@ansxo2026
+316,문태고등학교,2,6,21,주윤,y.joo2@ai.jne.kr,@ansxo2026
+317,문태고등학교,2,6,22,한승주,sj.han50@ai.jne.kr,@ansxo2026
+318,문태고등학교,2,7,1,고윤서,ys.ko18@ai.jne.kr,@ansxo2026
+319,문태고등학교,2,7,2,권아름,ar.kwon6@ai.jne.kr,@ansxo2026
+320,문태고등학교,2,7,3,김경민,gm.kim162@ai.jne.kr,@ansxo2026
+321,문태고등학교,2,7,4,김다연,dy.kim539@ai.jne.kr,@ansxo2026
+322,문태고등학교,2,7,5,김선민,sm.kim171@ai.jne.kr,@ansxo2026
+323,문태고등학교,2,7,6,김예준,yj.kim464@ai.jne.kr,@ansxo2026
+324,문태고등학교,2,7,7,김주환,jh.kim1067@ai.jne.kr,@ansxo2026
+325,문태고등학교,2,7,8,박민서,ms.park96@ai.jne.kr,@ansxo2026
+326,문태고등학교,2,7,9,박정빈,jb.park27@ai.jne.kr,@ansxo2026
+327,문태고등학교,2,7,10,박태민,tm.park20@ai.jne.kr,@ansxo2026
+328,문태고등학교,2,7,11,염민웅,mu.yeom2@ai.jne.kr,@ansxo2026
+329,문태고등학교,2,7,12,유대연,dy.yoo13@ai.jne.kr,@ansxo2026
+330,문태고등학교,2,7,13,이나영,ny.lee42@ai.jne.kr,@ansxo2026
+331,문태고등학교,2,7,14,이상현,sh.lee615@ai.jne.kr,@ansxo2026
+332,문태고등학교,2,7,15,이유민,ym.lee26@ai.jne.kr,@ansxo2026
+333,문태고등학교,2,7,16,이지후,jh.lee661@ai.jne.kr,@ansxo2026
+334,문태고등학교,2,7,17,임지후,jh.lim146@ai.jne.kr,@ansxo2026
+335,문태고등학교,2,7,18,정채윤,cy.jung41@ai.jne.kr,@ansxo2026
+336,문태고등학교,2,7,19,조은서,es.cho87@ai.jne.kr,@ansxo2026
+337,문태고등학교,2,7,20,진수아,sa.jin6@ai.jne.kr,@ansxo2026
+338,문태고등학교,2,7,21,천가온,go.cheon3@ai.jne.kr,@ansxo2026
+339,문태고등학교,2,7,22,최정인,ji.choi27@ai.jne.kr,@ansxo2026
+340,문태고등학교,2,7,23,김유찬,yc.kim89@ai.jne.kr,@ansxo2026`;
+        // 참고: 위 rawData는 일부 샘플입니다. 전체 데이터를 넣으시려면 여기에 붙여넣으시면 됩니다.
+
+        // 데이터 파싱
+        const students = [];
+        const lines = rawData.trim().split('\n');
+        for (let i = 1; i < lines.length; i++) {
+            const cols = lines[i].split(',');
+            students.push({
+                grade: cols[2],
+                class: cols[3],
+                num: cols[4],
+                name: cols[5].trim(),
+                id: cols[6],
+                pw: cols[7]
+            });
+        }
+
+        function searchAccount() {
+            const g = document.getElementById('grade').value;
+            const c = document.getElementById('class').value;
+            const n = document.getElementById('number').value;
+            const name = document.getElementById('name').value.trim();
+
+            const resultBox = document.getElementById('resultBox');
+            const messageBox = document.getElementById('messageBox');
+            const resId = document.getElementById('resId');
+            const resPw = document.getElementById('resPw');
+
+            if (!g || !c || !n || !name) {
+                showMessage("모든 정보를 정확히 입력해 주세요.");
+                return;
+            }
+
+            const student = students.find(s => 
+                s.grade == g && s.class == c && s.num == n && s.name === name
+            );
+
+            if (student) {
+                messageBox.classList.add('hidden');
+                resultBox.classList.remove('hidden');
+                resId.innerText = student.id;
+                resPw.innerText = student.pw;
+                resultBox.scrollIntoView({ behavior: 'smooth' });
+            } else {
+                resultBox.classList.add('hidden');
+                showMessage("일치하는 정보가 없습니다. 다시 확인해 주세요.");
+            }
+        }
+
+        function showMessage(msg) {
+            const messageBox = document.getElementById('messageBox');
+            messageBox.innerText = msg;
+            messageBox.classList.remove('hidden');
+        }
+
+        function copyToClipboard() {
+            const idText = document.getElementById('resId').innerText;
+            const tempInput = document.createElement("input");
+            tempInput.value = idText;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand("copy");
+            document.body.removeChild(tempInput);
+            
+            const copyBtn = document.querySelector('button[onclick="copyToClipboard()"]');
+            const originalText = copyBtn.innerText;
+            copyBtn.innerText = "복사됨!";
+            copyBtn.classList.replace('bg-blue-200', 'bg-green-500');
+            copyBtn.classList.replace('text-blue-700', 'text-white');
+            
+            setTimeout(() => {
+                copyBtn.innerText = originalText;
+                copyBtn.classList.replace('bg-green-500', 'bg-blue-200');
+                copyBtn.classList.replace('text-white', 'text-blue-700');
+            }, 2000);
+        }
+    </script>
+
+    <style>
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in-up { animation: fadeInUp 0.4s ease-out forwards; }
+    </style>
+</body>
+</html>
